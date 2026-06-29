@@ -1,0 +1,1995 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Biblical Transliterator — Hebrew (BHS) &amp; Koine Greek (NA28)</title>
+<meta name="description" content="Automatic transliteration of pointed Biblical Hebrew (BHS) and polytonic Koine Greek (NA28). Paste a verse, get a scholarly transliteration.">
+<style>
+:root {
+  --bg:        #f6f4ef;
+  --panel:     #ffffff;
+  --ink:       #20242b;
+  --muted:     #6b7280;
+  --line:      #e3ded4;
+  --accent:    #7c5b34;
+  --accent-2:  #2f6f6a;
+  --focus:     #b08755;
+  --out-bg:    #fbfaf6;
+  --shadow:    0 1px 2px rgba(0,0,0,.04), 0 8px 24px rgba(30,30,30,.06);
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+  --sans:  system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --mono:  "SBL Hebrew", "Ezra SIL", "Cardo", "Times New Roman", serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg:#15171c; --panel:#1d2127; --ink:#e9e6df; --muted:#9aa1ad;
+    --line:#2c313a; --accent:#cda36a; --accent-2:#6fc3bb; --focus:#cda36a;
+    --out-bg:#23272f; --shadow:0 1px 2px rgba(0,0,0,.3), 0 10px 30px rgba(0,0,0,.35);
+  }
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--sans);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+header {
+  text-align: center;
+  padding: 2.4rem 1rem 1.2rem;
+}
+header h1 {
+  font-family: var(--serif);
+  font-weight: 600;
+  font-size: clamp(1.6rem, 4vw, 2.3rem);
+  margin: 0;
+  letter-spacing: .2px;
+}
+header p {
+  color: var(--muted);
+  margin: .5rem auto 0;
+  max-width: 44rem;
+  font-size: .98rem;
+}
+
+.tabs {
+  display: flex;
+  gap: .4rem;
+  justify-content: center;
+  padding: 0 1rem;
+  flex-wrap: wrap;
+}
+.tabs button {
+  font-family: var(--serif);
+  font-size: 1.05rem;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--muted);
+  padding: .6rem 1.3rem;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all .15s ease;
+}
+.tabs button:hover { color: var(--ink); border-color: var(--focus); }
+.tabs button.active {
+  color: #fff;
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+main {
+  max-width: 60rem;
+  margin: 1.4rem auto 0;
+  padding: 0 1rem;
+}
+.panel { display: none; }
+.panel.active { display: block; animation: fade .2s ease; }
+@keyframes fade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+.controls {
+  display: flex;
+  align-items: center;
+  gap: .8rem 1.2rem;
+  flex-wrap: wrap;
+  margin-bottom: .8rem;
+}
+.controls label { font-size: .9rem; color: var(--muted); display: inline-flex; align-items: center; gap: .45rem; }
+.controls select {
+  font: inherit;
+  font-size: .9rem;
+  padding: .3rem .5rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--ink);
+}
+.controls .spacer { flex: 1; }
+.btn {
+  font: inherit;
+  font-size: .85rem;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--ink);
+  padding: .35rem .8rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: border-color .15s, color .15s;
+}
+.btn:hover { border-color: var(--focus); color: var(--accent); }
+
+.io {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+@media (max-width: 720px) { .io { grid-template-columns: 1fr; } }
+
+.field { display: flex; flex-direction: column; }
+.field .caption {
+  font-size: .78rem;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--muted);
+  margin-bottom: .4rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+.field .caption .count { text-transform: none; letter-spacing: 0; }
+
+textarea, .output {
+  min-height: 220px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 1rem 1.1rem;
+  background: var(--panel);
+  color: var(--ink);
+  box-shadow: var(--shadow);
+  font-size: 1.25rem;
+  line-height: 1.7;
+  resize: vertical;
+  width: 100%;
+}
+textarea { font-family: var(--mono); }
+textarea:focus { outline: none; border-color: var(--focus); box-shadow: 0 0 0 3px rgba(176,135,85,.18); }
+textarea[dir="rtl"] { text-align: right; }
+
+.output {
+  background: var(--out-bg);
+  font-family: var(--serif);
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-y: auto;
+}
+.output:empty::before {
+  content: attr(data-placeholder);
+  color: var(--muted);
+  font-style: italic;
+  font-size: 1rem;
+}
+
+.notes {
+  margin: 2.4rem auto 0;
+  max-width: 60rem;
+  padding: 1.2rem 1.3rem;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  font-size: .9rem;
+  color: var(--muted);
+}
+.notes h3 { margin: 0 0 .5rem; color: var(--ink); font-size: .95rem; }
+.notes ul { margin: .3rem 0 0; padding-left: 1.2rem; }
+.notes li { margin: .25rem 0; }
+.notes code { font-family: var(--mono); color: var(--accent); background: rgba(124,91,52,.08); padding: 0 .25em; border-radius: 4px; }
+
+footer {
+  text-align: center;
+  color: var(--muted);
+  font-size: .82rem;
+  padding: 2rem 1rem 3rem;
+  max-width: 60rem;
+  margin: 0 auto;
+}
+
+.toast {
+  position: fixed;
+  bottom: 1.4rem; left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: var(--ink);
+  color: var(--bg);
+  padding: .55rem 1.1rem;
+  border-radius: 999px;
+  font-size: .85rem;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .2s, transform .2s;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+</style>
+</head>
+<body>
+  <header>
+    <h1>Biblical Transliterator</h1>
+    <p>Paste pointed <strong>Biblical Hebrew</strong> (BHS / Leningrad) or polytonic
+       <strong>Koine Greek</strong> (NA28) and get a scholarly transliteration instantly —
+       handling begadkephat, dagesh, shewa, matres lectionis, breathings, and diphthongs.</p>
+  </header>
+
+  <nav class="tabs" id="tabs">
+    <button data-tab="hebrew" class="active">עברית · Biblical Hebrew</button>
+    <button data-tab="greek">Ἑλληνικά · Koine Greek</button>
+  </nav>
+
+  <main>
+    <!-- ================= HEBREW ================= -->
+    <section id="hebrew" class="panel active">
+      <div class="controls">
+        <label>Style
+          <select id="heb-scheme">
+            <option value="academic">SBL Academic (ḇ ḡ ḏ · ā ē ō · ʾ ʿ)</option>
+            <option value="general">SBL General (v · sh · ts · no marks)</option>
+          </select>
+        </label>
+        <div class="spacer"></div>
+        <button class="btn" id="heb-example">Load example (Gen 1:1)</button>
+        <button class="btn" id="heb-clear">Clear</button>
+        <button class="btn" id="heb-copy">Copy result</button>
+      </div>
+      <div class="io">
+        <div class="field">
+          <div class="caption"><span>Hebrew</span><span class="count" id="heb-count">0 chars</span></div>
+          <textarea id="heb-input" dir="rtl" lang="he" spellcheck="false"
+            placeholder="בְּרֵאשִׁית בָּרָא אֱלֹהִים…  — paste pointed Biblical Hebrew (BHS)"></textarea>
+        </div>
+        <div class="field">
+          <div class="caption"><span>Transliteration</span></div>
+          <div class="output" id="heb-output" data-placeholder="Transliteration appears here as you type…"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= GREEK ================= -->
+    <section id="greek" class="panel">
+      <div class="controls">
+        <label>Style
+          <select id="grk-scheme">
+            <option value="academic">Academic (ē ō · th ph ch · h-breathing)</option>
+            <option value="simple">Simplified (e o · no macrons)</option>
+          </select>
+        </label>
+        <div class="spacer"></div>
+        <button class="btn" id="grk-example">Load example (John 1:1)</button>
+        <button class="btn" id="grk-clear">Clear</button>
+        <button class="btn" id="grk-copy">Copy result</button>
+      </div>
+      <div class="io">
+        <div class="field">
+          <div class="caption"><span>Greek</span><span class="count" id="grk-count">0 chars</span></div>
+          <textarea id="grk-input" lang="grc" spellcheck="false"
+            placeholder="Ἐν ἀρχῇ ἦν ὁ λόγος…  — paste Koine Greek (NA28)"></textarea>
+        </div>
+        <div class="field">
+          <div class="caption"><span>Transliteration</span></div>
+          <div class="output" id="grk-output" data-placeholder="Transliteration appears here as you type…"></div>
+        </div>
+      </div>
+    </section>
+
+    <div class="notes">
+      <h3>How the transliteration works &amp; what to expect</h3>
+      <ul>
+        <li><strong>Hebrew (BHS-compatible):</strong> begadkephat letters render plosive with
+            dagesh (<code>b g d k p t</code>) and fricative without (<code>ḇ ḡ ḏ ḵ p̄ ṯ</code>);
+            <code>שׁ</code>=<code>š</code>, <code>שׂ</code>=<code>ś</code>; matres lectionis are
+            read as vowels (<code>וֹ</code>=<code>ô</code>, <code>וּ</code>=<code>û</code>,
+            <code>ִי</code>=<code>î</code>, final <code>ָה</code>=<code>â</code>); cantillation
+            marks are stripped. Furtive patach (e.g. <code>רוּחַ</code> → <code>rûaḥ</code>) is handled.
+            <strong>Ancient scripts accepted too:</strong> Paleo-Hebrew (Phoenician block) and
+            Samaritan input are mapped to square-script letters — being consonantal, they yield a
+            consonants-only transliteration (e.g. <code>𐤃𐤁𐤓</code> → <code>dbr</code>).</li>
+        <li><strong>Greek (NA28-compatible):</strong> <code>η</code>=<code>ē</code>,
+            <code>ω</code>=<code>ō</code>, <code>θ φ χ ψ ξ</code>=<code>th ph ch ps x</code>;
+            rough breathing → <code>h</code> (<code>ῥ</code>=<code>rh</code>); <code>γ</code>
+            before <code>γ κ ξ χ</code> → <code>n</code>; diphthongs <code>αι ει οι αυ ευ ου …</code>
+            handled; accents are not shown (standard convention).</li>
+        <li><strong>Qamats gadol (<code>ā</code>) vs. qamats qatan (<code>o</code>):</strong> resolved
+            authoritatively for every word of the Hebrew Bible using the OpenScriptures Hebrew Bible
+            (WLC) morphology — segolate nouns (<code>חָכְמָה</code>→<code>ḥoḵmâ</code>), the quantifier
+            <code>כָּל־</code>→<code>kol-</code>, and hollow-verb forms (<code>וַיָּמָת</code>→<code>wayyāmoṯ</code>)
+            are all correct, while genuinely long qamats (<code>יָד</code>→<code>yāḏ</code>,
+            <code>לְבָבְךָ</code>→<code>ləḇāḇḵā</code>) stays gadol.</li>
+        <li><strong>The one true limit — homographs:</strong> a few words are spelled identically but
+            read two ways depending on sentence context (<code>שָׁמְרָה</code> = <em>šāmərâ</em> “she kept”
+            vs. <em>šomrâ</em> “keep!”). With no sentence to parse, the tool gives the commoner reading;
+            these are theoretically unresolvable by any context-free transliterator.</li>
+      </ul>
+    </div>
+  </main>
+
+  <footer>
+    Built for study of the Hebrew Bible (BHS) and Greek New Testament (NA28).
+    Runs entirely in your browser — nothing is uploaded.
+  </footer>
+
+  <div class="toast" id="toast">Copied</div>
+
+  <script>
+var HEB_QATAN = {
+"אֲבָהֳתַנָא":[0],
+"אֶכְתָּב":[0],
+"אֶצְדָּק":[0],
+"אָבְדֶךָ":[0],
+"אָבְדָם":[0],
+"אָהֳלִי":[0],
+"אָהֳלִיאָב":[0],
+"אָהֳלִיבָה":[0],
+"אָהֳלִיבָמָה":[0],
+"אָהֳלֵי":[0],
+"אָהֳלֵיהֶם":[0],
+"אָהֳלֵיכֶם":[0],
+"אָהֳלֵךְ":[0],
+"אָהֳלֶי":[0],
+"אָהֳלֶךָ":[0],
+"אָהֳלָה":[0],
+"אָהֳלֹה":[0],
+"אָהֳלוֹ":[0],
+"אָזְנְךָ":[0],
+"אָזְנְכֶם":[0],
+"אָזְנִי":[0],
+"אָזְנֵיהֶם":[0],
+"אָזְנֵךְ":[0],
+"אָזְנֶיךָ":[0],
+"אָזְנֶךָ":[0],
+"אָזְנַיִם":[0],
+"אָזְנָי":[0],
+"אָזְנָיִךְ":[0],
+"אָזְנָיִם":[0],
+"אָזְנָיו":[0],
+"אָזְנָם":[0],
+"אָזְנוֹ":[0],
+"אָחֳרִי":[0],
+"אָחֳרֵין":[0],
+"אָחֳרָן":[0],
+"אָכְלֶךָ":[0],
+"אָכְלָם":[0],
+"אָכְלוֹ":[0],
+"אָמְנָה":[0],
+"אָמְנָם":[0],
+"אָמְרִי":[0],
+"אָמְרֵךְ":[0],
+"אָסְנַפַּר":[0],
+"אָסְפַּרְנָא":[0],
+"אָפְנָיו":[0],
+"אָפְסָיִם":[0],
+"אָרְבּוֹ":[0],
+"אָרְבּוֹת":[0],
+"אָרְחִי":[0],
+"אָרְחֶךָ":[0],
+"אָרְחֹתֵיהֶם":[0],
+"אָרְחֹתָי":[0],
+"אָרְחוֹ":[0],
+"אָרְחוֹת":[0],
+"אָרְחוֹתָי":[0],
+"אָרְכָּהּ":[0],
+"אָרְכָּם":[0],
+"אָרְכּוֹ":[0],
+"אָרְנָן":[0],
+"אָשְׁיוֹתֶיהָ":[0],
+"אָתְּ":[0],
+"בְּאָבְדַן":[0],
+"בְּאָהֳלֵי":[0],
+"בְּאָהֳלֵיהֶם":[0],
+"בְּאָהֳלֶךָ":[0],
+"בְּאָהֳלוֹ":[0],
+"בְּאָזְנֵי":[0],
+"בְּאָזְנֵיהֶם":[0],
+"בְּאָזְנֵיכֶם":[0],
+"בְּאָזְנֵינוּ":[0],
+"בְּאָזְנֶיךָ":[0],
+"בְּאָזְנַי":[0],
+"בְּאָזְנָי":[0],
+"בְּאָזְנָיו":[0],
+"בְּאָכְלֵנוּ":[0],
+"בְּאָכְלָם":[0],
+"בְּאָמְרִי":[0],
+"בְּאָמְרָם":[0],
+"בְּאָסְפְּךָ":[0],
+"בְּאָסְפְּכֶם":[0],
+"בְּאָסְרָם":[0],
+"בְּאָרְבָּם":[0],
+"בְּאָשְׁרִי":[0],
+"בְּבָצְרָה":[0],
+"בְּבָרְחֲךָ":[0],
+"בְּבָרְחִי":[0],
+"בְּבָרְחוֹ":[0],
+"בְּבָשְׁתֵּנוּ":[0],
+"בְּגָבְהָם":[0],
+"בְּגָבְהוֹ":[0],
+"בְּגָדְלֶךָ":[0],
+"בְּגָדְלוֹ":[0],
+"בְּדָבְרֶךָ":[0],
+"בְּדָמְךָ":[0],
+"בְּדָפְקָה":[0],
+"בְּזָבְחוֹ":[0],
+"בְּזָכְרֵנוּ":[0],
+"בְּחָדְשָׁהּ":[0],
+"בְּחָדְשׁוֹ":[0],
+"בְּחָזְקָה":[0],
+"בְּחָכְמָה":[0],
+"בְּחָכְמָתְךָ":[0],
+"בְּחָכְמָתָהּ":[0],
+"בְּחָכְמָתוֹ":[0],
+"בְּחָלְיוֹ":[0],
+"בְּחָפְזָהּ":[0],
+"בְּחָפְזָם":[0],
+"בְּחָפְנָיו":[0],
+"בְּחָרְמָה":[0],
+"בְּטָהֳרָתוֹ":[0],
+"בְּיָדְךָ":[0],
+"בְּיָהְצָה":[0],
+"בְּיָטְבָתָה":[0],
+"בְּיָסְדִי":[0],
+"בְּיָסְדוֹ":[0],
+"בְּיָפְיֵךְ":[0],
+"בְּיָפְיֶךָ":[0],
+"בְּיָפְיוֹ":[0],
+"בְּיָשְׁרוֹ":[0],
+"בְּכָלְּהוֹן":[0],
+"בְּכָרְתִי":[0],
+"בְּכָתְבוֹ":[0],
+"בְּלָמְדִי":[0],
+"בְּמָלְכוֹ":[0],
+"בְּמָרְדֳּכַי":[0],
+"בְּמָשְׁכוֹ":[0],
+"בְּמָתְנֵיהֶם":[0],
+"בְּמָתְנֵינוּ":[0],
+"בְּמָתְנָיו":[0],
+"בְּנָגְהָא":[0],
+"בְּנָגְעוֹ":[0],
+"בְּנָגְפּוֹ":[0],
+"בְּנָסְעָם":[0],
+"בְּנָקְבוֹ":[0],
+"בְּנָשְׂאִי":[0],
+"בְּעָבְרְכֶם":[0],
+"בְּעָבְרֶךָ":[0],
+"בְּעָבְרוֹ":[0],
+"בְּעָזְּךָ":[0],
+"בְּעָזְבָם":[0],
+"בְּעָמְדָם":[0],
+"בְּעָמְדוֹ":[0],
+"בְּעָנְיִי":[0],
+"בְּעָפְרָה":[0],
+"בְּעָפְרָת":[0],
+"בְּעָצְמַת":[0],
+"בְּעָרְלָה":[0],
+"בְּעָרְמָה":[0],
+"בְּעָרְמָם":[0],
+"בְּעָרְפִּי":[0],
+"בְּעָשְׁרוֹ":[0],
+"בְּפָעֳלֶךָ":[0],
+"בְּפָעֳלָם":[0, 1],
+"בְּקָדְשׁוֹ":[0],
+"בְּקָרְאִי":[0],
+"בְּקָרְבָתָם":[0],
+"בְּרָגְזָה":[0],
+"בְּרָדְפָם":[0],
+"בְּשָׁכְבְּךָ":[0],
+"בְּשָׁלְחִי":[0],
+"בְּשָׁמְעֲךָ":[0],
+"בְּשָׁמְעָם":[0],
+"בְּשָׁמְעוֹ":[0],
+"בְּשָׁמְרָם":[0],
+"בְּשָׁעֳלוֹ":[0],
+"בְּשָׁפְכְּךָ":[0],
+"בְּשָׂדְךָ":[0],
+"בְּתָפְשָׂם":[0],
+"בְּתָרְמָה":[0],
+"בְאֶחָד":[0],
+"בְאָהֳלֵיהֶם":[0],
+"בְאָהֳלֵיכֶם":[0],
+"בְאָהֳלוֹ":[0],
+"בְאָזְנֵי":[0],
+"בְאָזְנֵיהֶם":[0],
+"בְאָזְנֵינוּ":[0],
+"בְאָזְנַי":[0],
+"בְאָזְנַיִךְ":[0],
+"בְאָזְנָי":[0],
+"בְאָזְנָיו":[0],
+"בְאָזְנוֹ":[0],
+"בְאָמְנָה":[0],
+"בְגָבְהוֹ":[0],
+"בְגָדְלֶךָ":[0],
+"בְחָזְקֵנוּ":[0],
+"בְחָזְקָה":[0],
+"בְחָכְמָה":[0],
+"בְחָלְיוֹ":[0],
+"בְחָפְזִי":[0],
+"בְיָדְךָ":[0],
+"בְיָפְיֵךְ":[0],
+"בְמָלְכוֹ":[0],
+"בְמָתְנֵינוּ":[0],
+"בְמָתְנָיו":[0],
+"בְעָזְּךָ":[0],
+"בְעָנְיִי":[0],
+"בְעָנְיוֹ":[0],
+"בְעָקְבָּה":[0],
+"בְעָרְמָה":[0],
+"בְעָשְׁרוֹ":[0],
+"בְקָדְשִׁי":[0],
+"בְקָרְאִי":[0],
+"בְשָׁכְבוֹ":[0],
+"בְשָׁפְטֶךָ":[0],
+"בִּיקָר":[0],
+"בַּגָּיְא":[0],
+"בַּחָכְמָה":[0],
+"בַּלְאֲדָן":[0],
+"בַּלָּיְלָה":[0],
+"בַּנָּהָר":[1],
+"בַּסָּךְ":[0],
+"בַּצָּהֳרַיִם":[0],
+"בַּצָּהֳרָיִם":[0],
+"בַּצָּר":[0],
+"בַחָכְמָה":[0],
+"בַלָּיְלָה":[0],
+"בַצָּהֳרַיִם":[0],
+"בַצָּהֳרָיִם":[0],
+"בָּאֳהָבִים":[0],
+"בָּאֳהָלִים":[0],
+"בָּאֳנִי":[0],
+"בָּאֳנִיָּה":[0],
+"בָּאֳנִיּוֹת":[0],
+"בָּחֳלָיִים":[0],
+"בָּחֳרִי":[0],
+"בָּחֳרָבוֹת":[0],
+"בָּטְנִים":[0],
+"בָּמֳותֵי":[0],
+"בָּמֳתֵי":[0],
+"בָּעֳנִי":[0],
+"בָּצְרָה":[0],
+"בָּרְכוּ":[0],
+"בָּרֳהָטִים":[0],
+"בָּשְׁנָה":[0],
+"בָּשְׁתְּכֶם":[0],
+"בָּשְׁתָּם":[0],
+"בָּשְׂמַת":[0],
+"בָאְשָׁה":[0],
+"בָאְשָׁם":[0],
+"בָאְשׁוֹ":[0],
+"בָאֳהָלִים":[0],
+"בָבְלָיֵא":[0],
+"בָעֳמָרִים":[0],
+"בָצְרָה":[0],
+"בָשְׂמַת":[0],
+"גַנָּב":[0],
+"גָּאֳלֵי":[0],
+"גָּבְהֵי":[0],
+"גָּבְהוֹ":[0],
+"גָּדְלְךָ":[0],
+"גָּדְלוֹ":[0],
+"גָּזְרִין":[0],
+"גָּלְיָת":[0],
+"גָּלְמִי":[0],
+"גָּמְלֵךְ":[0],
+"גָּמְלָהּ":[0],
+"גָּפְרִית":[0],
+"גָּרְנִי":[0],
+"גָּרְנוֹת":[0],
+"גָפְרִית":[0],
+"דָּבְאֶךָ":[0],
+"דָּבְקִין":[0],
+"דָּבְרַת":[0],
+"דָּיְרֵי":[0],
+"דָּכְיָם":[0],
+"דָּכְרָנַיָּא":[0],
+"דָּמְיָה":[0],
+"דָּמְךָ":[0],
+"דָּרְיָוֶשׁ":[0],
+"דָּרְכָו":[0],
+"דָּרְשׁוֹ":[0],
+"דָבְחִין":[0],
+"דָיְרִין":[0],
+"דָךְ":[0],
+"דָרְיָוֶשׁ":[0],
+"הֶאֱכַלְתָּם":[0],
+"הַבָּיְתָה":[0],
+"הַגָּיְא":[0],
+"הַדָּרְבָן":[0],
+"הַדָּת":[0],
+"הַחָכְמָה":[0],
+"הַחָפְשִׁית":[0],
+"הַחָרְמָה":[0],
+"הַטַּבָּח":[0],
+"הַטָּהֳרָה":[0],
+"הַכָּתְנֹת":[0],
+"הַלְהָרְגֵנִי":[0],
+"הַלְיָרְשֵׁנוּ":[0],
+"הַלָּיְלָה":[0],
+"הַמָּוְתָה":[0],
+"הַמָּחֳרָת":[0],
+"הַמָּיְמָה":[0],
+"הַנָּכְרִי":[0],
+"הַנָּכְרִיּוֹת":[0],
+"הַסָּלְעָם":[0],
+"הַצָּהֳרַיִם":[0],
+"הַצָּהֳרָיִם":[0],
+"הַצָּרְעִי":[0],
+"הַצָּרְעָתִי":[0],
+"הַקָּרְבָן":[0],
+"הַקָּרְחִי":[0],
+"הַקָּרְחִים":[0],
+"הַשָּׁוְא":[0],
+"הָאָבְנָיִם":[1],
+"הָאָהֳלִי":[1],
+"הָאָזְנִי":[1],
+"הָחֳלֵיתִי":[0],
+"הָחֳרֵב":[0],
+"הָחֳרָבָה":[0],
+"הָלְאָה":[0],
+"הָעֳמָרִים":[0],
+"הָעָזְנִיָּה":[1],
+"הָפְכִּי":[0],
+"הָפְנוּ":[0],
+"הָרְגֵנִי":[0],
+"וְאָהֳלִיאָב":[0],
+"וְאָהֳלִיבָה":[0],
+"וְאָהֳלִיבָמָה":[0],
+"וְאָהֳלֵיהֶם":[0],
+"וְאָזְנֵי":[0],
+"וְאָזְנֵיהֶם":[0],
+"וְאָזְנֶיךָ":[0],
+"וְאָזְנֶךָ":[0],
+"וְאָזְנַי":[0],
+"וְאָזְנַיִךְ":[0],
+"וְאָזְנַיִם":[0],
+"וְאָזְנָיו":[0],
+"וְאָחֳרִי":[0],
+"וְאָחֳרָן":[0],
+"וְאָכְלָה":[0],
+"וְאָכְלוּ":[0],
+"וְאָמְרִין":[0],
+"וְאָמְרָה":[0],
+"וְאָמְרוּ":[0],
+"וְאָסְפוּ":[0],
+"וְאָסְרָה":[0],
+"וְאָרְחוֹת":[0],
+"וְאָרְכּוֹ":[0],
+"וְאָרְנָן":[0],
+"וְגָזְרַיָּא":[0],
+"וְגָפְרִית":[0],
+"וְגָרְנְךָ":[0],
+"וְדָבְקוּ":[0],
+"וְדָגְרָה":[0],
+"וְדָיְרֵי":[0],
+"וְדָלְקוּ":[0],
+"וְדָקְרֵנִי":[0],
+"וְדָרְיָוֶשׁ":[0],
+"וְדָרְשׁוּ":[0],
+"וְהַחָכְמָה":[0],
+"וְהַנָּכְרִי":[0],
+"וְהָאֳנִיָּה":[0],
+"וְהָבְנִים":[0],
+"וְהָחְתֵּל":[0],
+"וְהָיְתָה":[0],
+"וְהָלְכָה":[0],
+"וְהָלְכוּ":[0],
+"וְהָמְלֵחַ":[0],
+"וְהָעָזְנִיָּה":[1],
+"וְהָעָפְנִי":[1],
+"וְהָפְדֵּה":[0],
+"וְהָרְאָה":[0],
+"וְהָרְסָהּ":[0],
+"וְהָשְׁכְּבָה":[0],
+"וְזָבְחוּ":[0],
+"וְזָכְרוּ":[0],
+"וְזָרְחָה":[0],
+"וְזָרְקוּ":[0],
+"וְחָגְלָה":[0],
+"וְחָגְרוּ":[0],
+"וְחָזְקוּ":[0],
+"וְחָכְמַת":[0],
+"וְחָכְמָה":[0],
+"וְחָכְמָתוֹ":[0],
+"וְחָלְיוֹ":[0],
+"וְחָלְצָה":[0],
+"וְחָמְדוּ":[0],
+"וְחָרְבָּה":[0],
+"וְחָרְבוֹת":[0],
+"וְחָרְבוֹתֶיהָ":[0],
+"וְחָרְבוּ":[0],
+"וְחָרְמָה":[0],
+"וְחָשְׁכָה":[0],
+"וְחָשְׁכוּ":[0],
+"וְטָמְאָה":[0],
+"וְטָמְאוּ":[0],
+"וְטָמְנֵהוּ":[0],
+"וְיִגְאָל":[0],
+"וְיָגְבֳּהָה":[0],
+"וְיָדְךָ":[0],
+"וְיָדְעוּ":[0],
+"וְיָכְלָה":[0],
+"וְיָלְדָה":[0],
+"וְיָסְפוּ":[0],
+"וְיָצְאָה":[0],
+"וְיָצְאוּ":[0],
+"וְיָקְדְעָם":[0],
+"וְיָקְטָן":[0],
+"וְיָקְשָׁן":[0],
+"וְיָקְתְאֵל":[0],
+"וְיָקָם":[1],
+"וְיָרְדוּ":[0],
+"וְיָרְקָה":[0],
+"וְיָרְשׁוּ":[0],
+"וְיָשְׁבָה":[0],
+"וְיָשְׁבוּ":[0],
+"וְיָשְׁנוּ":[0],
+"וְיָשְׁפֵה":[0],
+"וְכָשְׁלוּ":[0],
+"וְכָתְנֹת":[0],
+"וְלִבָּם":[0],
+"וְלָבְשׁוּ":[0],
+"וְלָכְדָהּ":[0],
+"וְלָמְדוּ":[0],
+"וְלָקְחָה":[0],
+"וְלָקְחוּ":[0],
+"וְלָקֳבֵל":[0],
+"וְנָבְלָה":[0],
+"וְנָבְקָה":[0],
+"וְנָגְעָה":[0],
+"וְנָגְפוּ":[0],
+"וְנָדְרוּ":[0],
+"וְנָטְעוּ":[0],
+"וְנָכְרִי":[0],
+"וְנָכְרִים":[0],
+"וְנָסְעוּ":[0],
+"וְנָפְלָה":[0],
+"וְנָפְלוּ":[0],
+"וְנָשְׁקָה":[0],
+"וְנָשְׂאוּ":[0],
+"וְנָתְנָה":[0],
+"וְנָתְנוּ":[0],
+"וְסָבְבוּ":[0],
+"וְסָמְכוּ":[0],
+"וְסָפְרָה":[0],
+"וְסָרְבָּלֵיהוֹן":[0],
+"וְעָבְדֵהוּ":[0],
+"וְעָבְדוּ":[0],
+"וְעָבְיוֹ":[0],
+"וְעָבְרוּ":[0],
+"וְעָזְבוּ":[0],
+"וְעָזְרֵנוּ":[0],
+"וְעָלְזִי":[0],
+"וְעָלְתָה":[0],
+"וְעָמְדוּ":[0],
+"וְעָמְרִי":[0],
+"וְעָנְשׁוּ":[0],
+"וְעָפְיֵהּ":[0],
+"וְעָפְרָה":[0],
+"וְעָרְכוּ":[0],
+"וְעָרְפְּכֶם":[0],
+"וְעָרְפָּם":[0],
+"וְעָשְׂתָה":[0],
+"וְצָבְתָה":[0],
+"וְצָהֳרַיִם":[0],
+"וְצָלְחָה":[0],
+"וְצָמְחוּ":[0],
+"וְצָרְעָה":[0],
+"וְצוּרָם":[0],
+"וְקָבְנוֹ":[0],
+"וְקָדְקֹד":[0],
+"וְקָדְרוּ":[0],
+"וְקָדְשֵׁי":[0],
+"וְקָרְאוּ":[0],
+"וְקָרְבָּנוֹ":[0],
+"וְקָרְבוּ":[0],
+"וְרָבְצָה":[0],
+"וְרָבְצוּ":[0],
+"וְרָגְזוּ":[0],
+"וְרָגְמוּ":[0],
+"וְרָדְפֵהוּ":[0],
+"וְרָדְפוּ":[0],
+"וְרָהְבָּם":[0, 1],
+"וְרָהְגָּה":[0],
+"וְרָוְתָה":[0],
+"וְרָחְבָּהּ":[0],
+"וְרָחְבּוֹ":[0],
+"וְשָׁבְתָה":[0],
+"וְשָׁוְא":[0],
+"וְשָׁכְבָה":[0],
+"וְשָׁכְנוּ":[0],
+"וְשָׁלְחָה":[0],
+"וְשָׁלְטָן":[0],
+"וְשָׁלְטָנֵהּ":[0],
+"וְשָׁלְטָנָא":[0],
+"וְשָׁלְטָנָךְ":[0],
+"וְשָׁלְלוּ":[0],
+"וְשָׁלְמוּ":[0],
+"וְשָׁמְעוֹ":[0],
+"וְשָׁמְעוּ":[0],
+"וְשָׁמְרוּ":[0],
+"וְשָׁפְטוּ":[0],
+"וְשָׁפְכוּ":[0],
+"וְשָׁרְשֵׁי":[0],
+"וְשָׂבְעָה":[0],
+"וְשָׂכְלְתָנוּ":[0],
+"וְשָׂמְחוּ":[0],
+"וְשָׂרְפוּ":[0],
+"וְתָפְשׂוּ":[0],
+"וְתָקְעוּ":[0],
+"וְתָקְפָּא":[0],
+"וַיָּגָז":[1],
+"וַיָּגָר":[1],
+"וַיָּהָם":[1],
+"וַיָּחָם":[1],
+"וַיָּמָד":[1],
+"וַיָּמָל":[1],
+"וַיָּמָת":[1],
+"וַיָּנָס":[1],
+"וַיָּסָב":[1],
+"וַיָּעָף":[1],
+"וַיָּפָג":[1],
+"וַיָּצָם":[1],
+"וַיָּקָם":[1],
+"וַיָּרָם":[1],
+"וַיָּרָץ":[1],
+"וַיָּשָׁב":[1],
+"וַנָּסָב":[1],
+"וַנָּשָׁב":[1],
+"וַתָּגָר":[1],
+"וַתָּחָס":[1],
+"וַתָּלָשׁ":[1],
+"וַתָּמָת":[1],
+"וַתָּעָז":[1],
+"וַתָּקָם":[1],
+"וַתָּרָם":[1],
+"וַתָּרָץ":[1],
+"וַתָּשָׁב":[1],
+"וָאֳנִי":[0],
+"וָאֳנִיּוֹת":[0],
+"וָדָךְ":[1],
+"וָהָלְאָה":[1],
+"וָחֳלִי":[0],
+"וָחֳלָיִם":[0],
+"וָלָיְלָה":[1],
+"וָמָעְלָה":[1],
+"וָפְסִי":[0],
+"וָרָךְ":[1],
+"וּבְאָבְדָם":[0],
+"וּבְאָזְנֵי":[0],
+"וּבְאָזְנֶיךָ":[0],
+"וּבְאָזְנָיו":[0],
+"וּבְאָמְרִי":[0],
+"וּבְחָזְקָה":[0],
+"וּבְחָכְמָתִי":[0],
+"וּבְחָרְמָה":[0],
+"וּבְיָדְךָ":[0],
+"וּבְעָמְדָם":[0],
+"וּבְצָרְעָה":[0],
+"וּבְקָרְבָתָם":[0],
+"וּבְקָרְעִי":[0],
+"וּבְשָׁכְבְּךָ":[0],
+"וּבִכָּשְׁלוֹ":[0],
+"וּבַלָּיְלָה":[0],
+"וּבָאֳנִיּוֹת":[0],
+"וּבָטְלוּ":[0],
+"וּבָלְעָה":[0],
+"וּבָצְקַת":[0],
+"וּבָקְעָה":[0],
+"וּבָרְכוּ":[0],
+"וּבָרְקַת":[0],
+"וּבָשְׁתִּי":[0],
+"וּבָשְׂמַת":[0],
+"וּבָתְרָךְ":[0],
+"וּכְסָבְאָם":[0],
+"וּכְעָמְדוֹ":[0],
+"וּכְעָצְמוֹ":[0],
+"וּכְשָׁמְעִי":[0],
+"וּכְשָׁמְעוֹ":[0],
+"וּלְאָכְלְכֶם":[0],
+"וּלְדָבְקָה":[0],
+"וּלְהָפְכָהּ":[0],
+"וּלְחָכְמָה":[0],
+"וּלְחָקְרָהּ":[0],
+"וּלְחָרְבוֹת":[0],
+"וּלְמָעְלָה":[0],
+"וּלְמָרְדֳּכַי":[0],
+"וּלְנָעֳמִי":[0],
+"וּלְעָבְדוֹ":[0],
+"וּלְקָבְרוֹ":[0],
+"וּלְקָדְקֹד":[0],
+"וּלְקָרְחָה":[0],
+"וּלְרָחְבָּהּ":[0],
+"וּלְשָׁמְרָהּ":[0],
+"וּלְשָׁרְתוֹ":[0],
+"וּמִגָּרְנְךָ":[0],
+"וּמִיָּדְךָ":[0],
+"וּמִמָּחֳרָת":[0],
+"וּמִמָּתְנָיו":[0],
+"וּמִצָּהֳרַיִם":[0],
+"וּמִשָּׁמְרוּ":[0],
+"וּמֵחָמָס":[1],
+"וּמֵרָגְזֶךָ":[0],
+"וּמָדְדוּ":[0],
+"וּמָךְ":[0],
+"וּמָכְרוּ":[0],
+"וּמָלְאָה":[0],
+"וּמָלְאוּ":[0],
+"וּמָצְאָה":[0],
+"וּמָצְאוּ":[0],
+"וּמָרְדֳּכַי":[0],
+"וּמָשְׁלוֹ":[0],
+"וּמָתְנֵי":[0],
+"וּמָתְנֵיהֶם":[0],
+"וּמָתְנָיו":[0],
+"וּפָגְשׁוּ":[0],
+"וּפָלְחֵי":[0],
+"וּפָצְתָה":[0],
+"וּפָקְדֵנִי":[0],
+"וּפָרְשׂוּ":[0],
+"וּפָתְחָה":[0],
+"זְרַמְתָּם":[0],
+"זָבְנִין":[0],
+"זָיְעִין":[0],
+"זָךְ":[0],
+"זָכְרֵנִי":[0],
+"זָכְרָה":[0],
+"חֲמָתָם":[1],
+"חַרְבָּם":[0],
+"חָגְלָה":[0],
+"חָדְשִׁי":[0],
+"חָדְשֵׁי":[0],
+"חָדְשֵׁיכֶם":[0],
+"חָדְשָׁהּ":[0],
+"חָדְשׁוֹ":[0],
+"חָכְמְתָא":[0],
+"חָכְמַת":[0],
+"חָכְמַתְכֶם":[0],
+"חָכְמָה":[0],
+"חָכְמָתְךָ":[0],
+"חָכְמָתִי":[0],
+"חָכְמָתֵךְ":[0],
+"חָכְמָתֶךָ":[0],
+"חָכְמָתָם":[0],
+"חָכְמָתוֹ":[0],
+"חָכְמוֹת":[0],
+"חָלְיוֹ":[0],
+"חָפְנִי":[0],
+"חָפְנֵי":[0],
+"חָפְנֵיכֶם":[0],
+"חָפְנֶיךָ":[0],
+"חָפְנַיִם":[0],
+"חָפְנָיו":[0],
+"חָפְרַע":[0],
+"חָפְשִׁי":[0],
+"חָפְשִׁים":[0],
+"חָצְנִי":[0],
+"חָקְךָ":[0],
+"חָקְכֶם":[0],
+"חָקְרֵנִי":[0],
+"חָרְבָּה":[0],
+"חָרְבֹתֶיהָ":[0],
+"חָרְבֹתַיִךְ":[0],
+"חָרְבֹתָיו":[0],
+"חָרְבוֹת":[0],
+"חָרְמָה":[0],
+"חָרְפִּי":[0],
+"חָשְׁכִּי":[0],
+"טָהֳרַת":[0],
+"טָהֳרָה":[0],
+"טָהֳרָהּ":[0],
+"טָהֳרָתוֹ":[0],
+"טָמְנֵם":[0],
+"טָרְחֲכֶם":[0],
+"יְתָאֳרֵהוּ":[0],
+"יָגְלִי":[0],
+"יָגָע":[1],
+"יָדְךָ":[0],
+"יָדְכָה":[0],
+"יָדְעִין":[0],
+"יָדְעֵי":[0],
+"יָהְדָּי":[0],
+"יָזְמוּ":[0],
+"יָחְנְךָ":[0],
+"יָחֳרַם":[0],
+"יָחֳרָם":[0],
+"יָטְבָה":[0],
+"יָטְבָתָה":[0],
+"יָכְלִין":[0],
+"יָעֳמַד":[0],
+"יָפְיֵךְ":[0],
+"יָפְיָהּ":[0],
+"יָפְיוֹ":[0],
+"יָקְטָן":[0],
+"יָקְמְעָם":[0],
+"יָקְנְעָם":[0],
+"יָקְנֳעָם":[0],
+"יָקְשָׁן":[0],
+"יָקְתְאֵל":[0],
+"יָרְקֳעָם":[0],
+"יָשְׁבְּקָשָׁה":[0],
+"יָשְׁרוֹ":[0],
+"יָתְבִין":[0],
+"יָתְהוֹן":[0],
+"כְּאָהֳבָם":[0],
+"כְּאָהֳלֵי":[0],
+"כְּאָכְלָם":[0],
+"כְּאָמְרָם":[0],
+"כְּאָסְפֵּי":[0],
+"כְּאָרְכָּן":[0],
+"כְּדָבְרָם":[0],
+"כְּחָכְמַת":[0],
+"כְּחָכְמָתֶךָ":[0],
+"כְּחָתָן":[1],
+"כְּטָהֳרַת":[0],
+"כְּפָעֳלָהּ":[0],
+"כְּפָעֳלָם":[0],
+"כְּפָעֳלוֹ":[0],
+"כְּרָפְאִי":[0],
+"כְּשָׁמְעֲךָ":[0],
+"כְּשָׁמְעֲכֶם":[0],
+"כְּשָׁמְעִי":[0],
+"כְּשָׁמְעָם":[0],
+"כְּשָׁמְעָתוֹ":[0],
+"כְּשָׁמְעוֹ":[0],
+"כְּתָפְשְׂכֶם":[0],
+"כְאֶחָד":[0],
+"כְמָלְכוֹ":[0],
+"כְמָשְׁלוֹ":[0],
+"כְעָבְרָם":[0],
+"כְרָשָׁע":[1],
+"כְשָׁמְעוֹ":[0],
+"כֶחָלָב":[1],
+"כַּדָּרְבֹנוֹת":[0],
+"כַּצָּהֳרָיִם":[0],
+"כָּאֳנִיּוֹת":[0],
+"כָּזְבִּי":[0],
+"כָּחֳרָבוֹת":[0],
+"כָּלְּהֵין":[0],
+"כָּנְיָהוּ":[0],
+"כָּפְרוֹ":[0],
+"כָּרְמִי":[0],
+"כָּרְסְיֵהּ":[0],
+"כָּרְסֵא":[0],
+"כָּרְתָה":[0],
+"כָּתְבֵם":[0],
+"כָּתְלֵנוּ":[0],
+"כָּתְנוֹת":[0],
+"כָפְרְךָ":[0],
+"כָרְסָוָן":[0],
+"כָתְבָה":[0],
+"כָתְבָהּ":[0],
+"לְאָהֳלִי":[0],
+"לְאָהֳלֵיהֶם":[0],
+"לְאָהֳלֵיכֶם":[0],
+"לְאָהֳלוֹ":[0],
+"לְאָזְנִי":[0],
+"לְאָחֳרָן":[0],
+"לְאָכְלָה":[0],
+"לְאָכְלוֹ":[0],
+"לְאָרְכָּהּ":[0],
+"לְאָרְנָן":[0],
+"לְאָשְׁפַיָּא":[0],
+"לְבָשְׁתְּךָ":[0],
+"לְגָאֳלֵךְ":[0],
+"לְגָבְהָה":[0],
+"לְגָפְרִית":[0],
+"לְגָרְשֵׁנוּ":[0],
+"לְדָבָר":[1],
+"לְדָרְיָוֶשׁ":[0],
+"לְדָרְשֵׁנִי":[0],
+"לְהָדְפָהּ":[0],
+"לְהָרְגֵנוּ":[0],
+"לְהָרְגֶךָ":[0],
+"לְהָרְגוֹ":[0],
+"לְחָבְשָׁהּ":[0],
+"לְחָדְשֵׁי":[0],
+"לְחָזְקָה":[0],
+"לְחָזְקָהּ":[0],
+"לְחָכְמָה":[0],
+"לְחָכְמָתִי":[0],
+"לְחָרְבָּה":[0],
+"לְחָרְבוֹת":[0],
+"לְחֹבָב":[0],
+"לְטָהֳרָתוֹ":[0],
+"לְטָמְאָה":[0],
+"לְטָמְנוֹ":[0],
+"לְיָד":[0],
+"לְיָדְעֵי":[0],
+"לְיָקְמֳעָם":[0],
+"לְיָשְׁבְּקָשָׁה":[0],
+"לְלָכְדֵנִי":[0],
+"לְלָכְדָהּ":[0],
+"לְמָחֳרַת":[0],
+"לְמָחֳרָתָם":[0],
+"לְמָכְרָהּ":[0],
+"לְמָלְכוֹ":[0],
+"לְמָרְדֳּכַי":[0],
+"לְמָרְדֳּכָי":[0],
+"לְמָרְטָה":[0],
+"לְמָשְׁחָה":[0],
+"לְנָכְרִי":[0],
+"לְנָכְרִים":[0],
+"לְנָעֳמִי":[0],
+"לְסָקְלוֹ":[0],
+"לְעָבְדָהּ":[0],
+"לְעָבְדָם":[0],
+"לְעָבְדוֹ":[0],
+"לְעָבְרְךָ":[0],
+"לְעָזְבֵךְ":[0],
+"לְעָזְרֵנִי":[0],
+"לְעָזְרֵנוּ":[0],
+"לְעָזְרוֹ":[0],
+"לְעָלְמִין":[0],
+"לְעָלְמַיָּא":[0],
+"לְעָמְדָהּ":[0],
+"לְעָשְׁקָם":[0],
+"לְעָתְנִיאֵל":[0],
+"לְפָלְחָן":[0],
+"לְפָעֳלָם":[0],
+"לְפָעֳלוֹ":[0],
+"לְקָבְלָךְ":[0],
+"לְקָבְצִי":[0],
+"לְקָבְרָהּ":[0],
+"לְקָדְשׁוֹ":[0],
+"לְקָרְבַּן":[0],
+"לְקָרְבָה":[0],
+"לְרָחְצָה":[0],
+"לְרָחֳקָה":[0],
+"לְשָׁכְנִי":[0],
+"לְשָׁכְרָה":[0],
+"לְשָׁמְרָם":[0],
+"לְשָׁמְרוֹ":[0],
+"לְשָׁפְטֵנוּ":[0],
+"לְשָׁרְתוֹ":[0],
+"לְשָׂבְעָה":[0],
+"לְשָׂרְפוֹ":[0],
+"לְתִתָּם":[0],
+"לְתָפְשָׂהּ":[0],
+"לְתָפְשָׂם":[0],
+"לִמְהוּמָן":[0],
+"לִמְשָׁחֳךָ":[0],
+"לַגַּנָּב":[0],
+"לַדָּךְ":[0],
+"לַחָכְמָה":[0],
+"לַחָפְשִׁי":[0],
+"לַמָּחֳרָת":[0],
+"לַנָּכְרִי":[0],
+"לַקָּרְחִים":[0],
+"לַשָּׁוְא":[0],
+"לָחֳדָשָׁיו":[0],
+"לָחֳלִי":[0],
+"לָיְלָה":[0],
+"לָיְשָׁה":[0],
+"לָקֳבֵל":[0],
+"לָרָשׁ":[1],
+"מִבָּצְקַת":[0],
+"מִבָּצְרָה":[0],
+"מִגָּרְנְךָ":[0],
+"מִדָּלְיָו":[0],
+"מִדָּמְךָ":[0],
+"מִדָּפְקָה":[0],
+"מִזָּהָב":[1],
+"מִיָּדְךָ":[0],
+"מִיָּטְבָתָה":[0],
+"מִלְמָעְלָה":[0],
+"מִמָּחֳרַת":[0],
+"מִמָּחֳרָת":[0],
+"מִמָּתְנֵי":[0],
+"מִמָּתְנַיִם":[0],
+"מִנָּכְרִיָּה":[0],
+"מִסָּלְתָּהּ":[0],
+"מִצָּרְעָה":[0],
+"מִקָּדְשֵׁי":[0],
+"מִשְׁכְּנֹתָם":[0],
+"מִשָּׂבְעָהּ":[0],
+"מֵאָהֳלֵי":[0],
+"מֵאָהֳלֵיהֶם":[0],
+"מֵאָהֳלֶךָ":[0],
+"מֵאָהֳלוֹ":[0],
+"מֵהָלְאָה":[0],
+"מֵהָעוֹלָם":[1],
+"מֵחָכְמַת":[0],
+"מֵחָכְמָה":[0],
+"מֵחָלְיוֹ":[0],
+"מֵחָרְבוֹתֵיהֶם":[0],
+"מֵעָבְדֵנוּ":[0],
+"מֵעָצְבְּךָ":[0],
+"מָּעְלָה":[0],
+"מָאֳחָזִים":[0],
+"מָאֳסָם":[0],
+"מָחֳרָבוֹת":[0],
+"מָךְ":[0],
+"מָלְכִי":[0],
+"מָלְכָה":[0],
+"מָלְכוֹ":[0],
+"מָעֳמָד":[0],
+"מָפְנֶה":[0],
+"מָרְאֶה":[0],
+"מָרְדֳּכַי":[0],
+"מָרְדֳּכָי":[0],
+"מָשְׁזָר":[0],
+"מָשְׁחָת":[0],
+"מָשְׁחָתָם":[0],
+"מָשְׁחוֹ":[0],
+"מָשְׁכֵנִי":[0],
+"מָשְׁכוּ":[0],
+"מָשְׁלוֹ":[0],
+"מָתְנֵי":[0],
+"מָתְנֵיהֶם":[0],
+"מָתְנֵיכֶם":[0],
+"מָתְנֶיהָ":[0],
+"מָתְנֶיךָ":[0],
+"מָתְנַי":[0],
+"מָתְנַיִם":[0],
+"מָתְנָי":[0],
+"מָתְנָיִם":[0],
+"מָתְנָיו":[0],
+"מָתְקִי":[0],
+"מוּזָר":[0],
+"מוּכָן":[0],
+"נִרְגָּן":[0],
+"נִרְפָּשׂ":[0],
+"נַעֲרָץ":[0],
+"נָגְהָם":[0],
+"נָגְעֵךְ":[0],
+"נָוְךָ":[0],
+"נָחְנוּ":[0],
+"נָכְרִי":[0],
+"נָכְרִיָּה":[0],
+"נָכְרִיּוֹת":[0],
+"נָכְרִים":[0],
+"נָכְרוֹ":[0],
+"נָעֳמִי":[0],
+"נָפְלוֹ":[0],
+"נָקְבָה":[0],
+"נָתְשִׁי":[0],
+"סָבְאֵךְ":[0],
+"סָבְאָם":[0],
+"סָלְקָן":[0],
+"סָמְכֵנִי":[0],
+"סָרְכִין":[0],
+"סָרְכֵי":[0],
+"סָרְכַיָּא":[0],
+"עָבְדִין":[0],
+"עָבְדֶךָ":[0],
+"עָבְדָה":[0],
+"עָבְרְכֶם":[0],
+"עָבְרִי":[0],
+"עָבְרֵנוּ":[0],
+"עָבְרָם":[0],
+"עָבְרוֹ":[0],
+"עָזְבֵךְ":[0],
+"עָזְבָם":[0],
+"עָזְרֵנִי":[0],
+"עָזְרֵנוּ":[0],
+"עָכְרָן":[0],
+"עָלְמַיָּא":[0],
+"עָלְמָא":[0],
+"עָמְדִי":[0],
+"עָמְדֶךָ":[0],
+"עָמְדָם":[0],
+"עָמְדוֹ":[0],
+"עָמְרִי":[0],
+"עָנְדֵם":[0],
+"עָנְיִי":[0],
+"עָנְיֵךְ":[0],
+"עָנְיֵנוּ":[0],
+"עָנְיָהּ":[0],
+"עָנְיָם":[0],
+"עָפְיֵהּ":[0],
+"עָפְרָה":[0],
+"עָפְרָתָה":[0],
+"עָפְרוֹת":[0],
+"עָצְבִּי":[0],
+"עָצְמִי":[0],
+"עָצְמָה":[0],
+"עָרְבֵנִי":[0],
+"עָרְלַת":[0],
+"עָרְלַתְכֶם":[0],
+"עָרְלָה":[0],
+"עָרְלָתָם":[0],
+"עָרְלָתוֹ":[0],
+"עָרְלֹתֵיהֶם":[0],
+"עָרְלוֹת":[0],
+"עָרְמָה":[0],
+"עָרְפְּךָ":[0],
+"עָרְפְּכֶם":[0],
+"עָרְפֶּךָ":[0],
+"עָרְפָּה":[0],
+"עָרְפָּם":[0],
+"עָרְפּוֹ":[0],
+"עָשְׁרָם":[0],
+"עָשְׁרוֹ":[0],
+"עָתְנִי":[0],
+"עָתְנִיאֵל":[0],
+"פָּעֳלֵךְ":[0],
+"פָּעֳלֶךָ":[0],
+"פָּעֳלָם":[0],
+"פָּעֳלוֹ":[0],
+"פָּקְדִי":[0],
+"פָּקְדֵנִי":[0],
+"פָּרְסָאָה":[0],
+"פָּתְהֵן":[0],
+"פָעֳלִי":[0],
+"פָעֳלֶךָ":[0],
+"פָעֳלוֹ":[0],
+"צָהֳרָיִם":[0],
+"צָרְכֶּךָ":[0],
+"צָרְעָה":[0],
+"צָרְפַת":[0],
+"צָרְפַתָה":[0],
+"צָרְפָה":[0],
+"צָרְתַנָה":[0],
+"צָרְתָן":[0],
+"קָבְרוֹ":[0],
+"קָדְקֳדֶךָ":[0],
+"קָדְקֳדוֹ":[0],
+"קָדְקֹד":[0],
+"קָדְשְׁךָ":[0],
+"קָדְשִׁי":[0],
+"קָדְשֵׁי":[0],
+"קָדְשֵׁיהֶם":[0],
+"קָדְשֵׁיכֶם":[0],
+"קָדְשֵׁנוּ":[0],
+"קָדְשֶׁךָ":[0],
+"קָדְשׁוֹ":[0],
+"קָסֳמִי":[0],
+"קָרְאֵנוּ":[0],
+"קָרְאָם":[0],
+"קָרְבְּנֵיהֶם":[0],
+"קָרְבַּן":[0],
+"קָרְבַּנְכֶם":[0],
+"קָרְבָּן":[0],
+"קָרְבָּנְךָ":[0],
+"קָרְבָּנִי":[0],
+"קָרְבָּנֶךָ":[0],
+"קָרְבָּנָהּ":[0],
+"קָרְבָּנָם":[0],
+"קָרְבָּנוֹ":[0],
+"קָרְחִי":[0],
+"קָרְחָה":[0],
+"קָרְחָתֵךְ":[0],
+"קָשְׁרֵם":[0],
+"רָדְפוֹ":[0],
+"רָחְבָּהּ":[0],
+"רָחְבָּן":[0],
+"רָחְבּוֹ":[0],
+"רָמְחֵיהֶם":[0],
+"רָפְסָה":[0],
+"שָּׁוְא":[0],
+"שָׁבְרֵם":[0],
+"שָׁוְא":[0],
+"שָׁלְחֶךָ":[0],
+"שָׁלְטָן":[0],
+"שָׁלְטָנְהוֹן":[0],
+"שָׁלְטָנֵהּ":[0],
+"שָׁלְטָנַיָּא":[0],
+"שָׁמְעוֹ":[0],
+"שָׁמְרֵם":[0],
+"שָׁמְרֵנִי":[0],
+"שָׁמְרָיִן":[0],
+"שָׁנְיָן":[0],
+"שָׁפְטִין":[0],
+"שָׁפְטֵנִי":[0],
+"שָׁפְטָה":[0],
+"שָׁפְכָה":[0],
+"שָׁרְרֵךְ":[0],
+"שָׁרְשִׁי":[0],
+"שָׁרְשֵׁי":[0],
+"שָׁרְשֵׁךְ":[0],
+"שָׁרְשָׁם":[0],
+"שָׁרְשׁוֹ":[0],
+"שָׁרְשׁוֹהִי":[0],
+"שָׁרֳשֶׁיהָ":[0],
+"שָׂבְעֶךָ":[0],
+"שָׂבְעָתֵךְ":[0],
+"שָׂדְךָ":[0],
+"שָׂךְ":[0],
+"שָׂרְפוֹ":[0],
+"תְּשָׁעֳשָׁעוּ":[0],
+"תָּאֳמֵי":[0],
+"תָּאֳרָם":[0],
+"תָּאֳרוֹ":[0],
+"תָּהֳלָה":[0],
+"תָּכְנִית":[0],
+"תָּפְתֶּה":[0],
+"תָּקְהַת":[0],
+"תָּקְטָר":[0],
+"תָּרְנָם":[0],
+"תָּשָׁב":[1],
+"תָקְפּוֹ":[0]
+};
+if(typeof module!=="undefined"&&module.exports)module.exports={HEB_QATAN:HEB_QATAN};
+
+</script>
+  <script>
+/* ===========================================================================
+ * Biblical Hebrew transliteration engine
+ * ---------------------------------------------------------------------------
+ * Designed for pointed (vocalized) Hebrew as encoded in BHS / the Leningrad
+ * Codex (Unicode Hebrew block U+0590–U+05FF). Cantillation marks (te'amim)
+ * are stripped automatically.
+ *
+ * Default output follows the SBL *academic* transliteration style
+ * (ḇ ḡ ḏ ḵ p̄ ṯ, ḥ ṭ ṣ š ś, ʾ ʿ, macrons for long vowels, ə for vocal shewa).
+ * A simplified "general purpose" style is also provided via toGeneral().
+ *
+ * QAMATS QATAN is resolved authoritatively: heb-qatan.js (built from the OSHB/WLC
+ * morphology) supplies, per Hebrew-Bible word, exactly which qamats is qatan (o).
+ * The conjunction וּ → û and the quantifier כל → kol are handled too. Remaining
+ * heuristics (vocal/silent shewa, dagesh forte/lene) follow standard rules and are
+ * correct for the vast majority of forms; true homographs (e.g. שָׁמְרָה qatal vs.
+ * imperative) are inherently context-dependent and default to the commoner reading.
+ * =========================================================================== */
+var HebrewTranslit = (function () {
+  "use strict";
+
+  // --- niqqud / points ------------------------------------------------------
+  var SHEVA        = "ְ",
+      HATAF_SEGOL  = "ֱ",
+      HATAF_PATAH  = "ֲ",
+      HATAF_QAMATS = "ֳ",
+      HIRIQ        = "ִ",
+      TSERE        = "ֵ",
+      SEGOL        = "ֶ",
+      PATAH        = "ַ",
+      QAMATS       = "ָ",
+      HOLAM        = "ֹ",
+      HOLAM_HASER  = "ֺ",
+      QUBUTS       = "ֻ",
+      DAGESH       = "ּ",   // dagesh or mapiq (same code point)
+      METEG        = "ֽ",
+      RAFE         = "ֿ",
+      SHIN_DOT     = "ׁ",
+      SIN_DOT      = "ׂ",
+      QAMATS_QATAN = "ׇ";
+
+  // --- consonants -----------------------------------------------------------
+  var ALEPH = "א", HE = "ה", VAV = "ו", YOD = "י",
+      HET = "ח", AYIN = "ע", SHIN = "ש", KAF = "כ", LAMED = "ל";
+  var KOL_PFX = "ובכלמ"; // proclitics that may attach to the quantifier כל
+
+  var baseCons = {
+    "א": "ʾ", "ב": "b", "ג": "g", "ד": "d", "ה": "h",
+    "ו": "w", "ז": "z", "ח": "ḥ", "ט": "ṭ", "י": "y",
+    "ך": "k", "כ": "k", "ל": "l", "ם": "m", "מ": "m",
+    "ן": "n", "נ": "n", "ס": "s", "ע": "ʿ", "ף": "p",
+    "פ": "p", "ץ": "ṣ", "צ": "ṣ", "ק": "q", "ר": "r",
+    "ש": "š", "ת": "t"
+  };
+
+  // begadkephat: [plosive (with dagesh lene), fricative (without)]
+  var FRIC_PE = "p̄"; // p + combining macron
+  var begad = {
+    "ב": ["b", "ḇ"], "ג": ["g", "ḡ"], "ד": ["d", "ḏ"],
+    "כ": ["k", "ḵ"], "ך": ["k", "ḵ"],
+    "פ": ["p", FRIC_PE], "ף": ["p", FRIC_PE],
+    "ת": ["t", "ṯ"]
+  };
+
+  // vowel sign -> [translit, isLong]
+  var vowelMap = {};
+  vowelMap[HATAF_SEGOL]  = ["ĕ", false];
+  vowelMap[HATAF_PATAH]  = ["ă", false];
+  vowelMap[HATAF_QAMATS] = ["ŏ", false];
+  vowelMap[HIRIQ]        = ["i", false];
+  vowelMap[TSERE]        = ["ē", true];
+  vowelMap[SEGOL]        = ["e", false];
+  vowelMap[PATAH]        = ["a", false];
+  vowelMap[QAMATS]       = ["ā", true];
+  vowelMap[HOLAM]        = ["ō", true];
+  vowelMap[HOLAM_HASER]  = ["ō", true];
+  vowelMap[QUBUTS]       = ["u", false];
+  vowelMap[QAMATS_QATAN] = ["o", false];
+
+  function isCons(ch)         { return ch >= "א" && ch <= "ת"; }
+  function isCantillation(ch) { return ch >= "֑" && ch <= "֯"; }
+  function isPoint(ch) {
+    return (ch >= "ְ" && ch <= "ֽ") || ch === RAFE ||
+           ch === SHIN_DOT || ch === SIN_DOT ||
+           ch === "ׄ" || ch === "ׅ" || ch === QAMATS_QATAN;
+  }
+
+  // Split one word into letters; each letter carries its attached points.
+  function parseWord(word) {
+    var letters = [];
+    for (var i = 0; i < word.length; i++) {
+      var ch = word[i];
+      if (isCantillation(ch) || ch === METEG) continue;   // drop te'amim & meteg
+      if (isCons(ch)) {
+        letters.push({ c: ch, pts: [] });
+      } else if (isPoint(ch) && letters.length) {
+        letters[letters.length - 1].pts.push(ch);
+      }
+    }
+    return letters;
+  }
+
+  function vowelPoint(pts) {
+    for (var i = 0; i < pts.length; i++) {
+      if (Object.prototype.hasOwnProperty.call(vowelMap, pts[i])) return pts[i];
+    }
+    return null;
+  }
+
+  // The Tetragrammaton is identified by its consonantal skeleton (yod-he-vav-he),
+  // ignoring whatever vowel pointing BHS uses (יְהוָה, יְהֹוָה, the Elohim-pointing,
+  // etc.), and is always rendered "YHWH". Common one-letter prefixes (וּ בּ לַ כַּ מֵ)
+  // are kept, e.g. וַיהוָה → "waYHWH".
+  function isYHWH(skel) { return skel === "יהוה"; }
+  var YHWH_PREFIX = "ובלכמ";
+
+  function translitWord(word) {
+    var L = parseWord(word);
+    if (!L.length) return "";
+    var skel = "";
+    for (var s = 0; s < L.length; s++) skel += L[s].c;
+    if (isYHWH(skel)) return "YHWH";
+    if (skel.length === 5 && isYHWH(skel.slice(1)) && YHWH_PREFIX.indexOf(skel.charAt(0)) >= 0) {
+      return translitLetters([L[0]]) + "YHWH";
+    }
+    applyQatanLookup(word, L);
+    markKolQatan(L);
+    return translitLetters(L);
+  }
+
+  // Authoritative qamats-qatan override: for words attested in the Hebrew Bible,
+  // HEB_QATAN (built from the OSHB morphology) lists which qamats(es) are qatan,
+  // resolving the gadol/qatan ambiguity that orthography alone cannot (e.g.
+  // חָכְמָה ḥoḵmâ vs שָׁמְרָה šāmərâ). Key = word with cantillation stripped (meteg kept).
+  function applyQatanLookup(word, L) {
+    if (typeof HEB_QATAN === "undefined") return;
+    var set = HEB_QATAN[word.replace(/[\u0591-\u05AF\u05BD]/g, "")];
+    if (!set) return;
+    var ord = -1;
+    for (var i = 0; i < L.length; i++) {
+      if (L[i].pts.indexOf(QAMATS) >= 0) {
+        ord++;
+        if (set.indexOf(ord) >= 0) L[i].qatan = true;
+      }
+    }
+  }
+
+  // Mark the qamats of the quantifier כֹּל when bound (spelled כָּל, possibly with a
+  // proclitic) as qamats qatan → "o". The absolute is written with holam (כֹּל), so a
+  // qamats on this two-letter quantifier is reliably qatan. Scoped tightly so words
+  // like הֵיכָל (hêḵāl, long qamats) are never affected.
+  function markKolQatan(L) {
+    var n = L.length;
+    if (n < 2 || L[n - 1].c !== LAMED || L[n - 2].c !== KAF) return;
+    for (var j = 0; j < n - 2; j++) if (KOL_PFX.indexOf(L[j].c) < 0) return; // only proclitics may precede
+    var kaf = L[n - 2], lam = L[n - 1];
+    if (kaf.pts.indexOf(QAMATS) >= 0 && vowelPoint(lam.pts) === null && lam.pts.indexOf(SHEVA) < 0)
+      kaf.qatan = true;
+  }
+
+  function translitLetters(L) {
+    var n = L.length;
+    if (!n) return "";
+    var skip = new Array(n).fill(false);
+    var out = "";
+
+    // running state describing the *previous* emitted letter
+    var prevHadVowel   = false; // produced any vowel sound (full vowel or vocal shewa)
+    var prevVowelLong  = false;
+    var prevSilentShwa = false;
+
+    for (var i = 0; i < n; i++) {
+      if (skip[i]) continue;
+      var cur = L[i], nx = L[i + 1];
+      var pts = cur.pts;
+      var c   = cur.c;
+      var isLast = (i === n - 1);
+      var has = function (p) { return pts.indexOf(p) >= 0; };
+      var nHas = function (p) { return nx && nx.pts.indexOf(p) >= 0; };
+
+      var dag      = has(DAGESH);
+      var isBegad  = Object.prototype.hasOwnProperty.call(begad, c);
+
+      // word-initial shureq conjunction וּ ("and") stands alone as the vowel û
+      if (c === VAV && dag && i === 0 && vowelPoint(pts) === null && !has(SHEVA)) {
+        out += "û";
+        prevHadVowel = true; prevVowelLong = true; prevSilentShwa = false;
+        continue;
+      }
+
+      // ---- consonant ------------------------------------------------------
+      var consStr;
+      if (c === SHIN) {
+        consStr = has(SIN_DOT) ? "ś" : "š";
+      } else if (c === HE && dag && isLast) {
+        consStr = "h";                       // mapiq he (pronounced)
+      } else if (isBegad) {
+        consStr = dag ? begad[c][0] : begad[c][1];
+      } else {
+        consStr = baseCons[c] || "";
+      }
+
+      // gemination from dagesh forte: occurs when preceded by a vowel sound.
+      // (Begadkephat at word-start / after silent shewa = dagesh lene, no doubling.)
+      if (dag && !(c === HE && isLast) && prevHadVowel) {
+        consStr = consStr + consStr;
+      }
+
+      // ---- vowel ----------------------------------------------------------
+      var vowelStr = "";
+      var thisVowelLong = false;
+      var producedVowel = false;
+      var vp = vowelPoint(pts);
+
+      // Furtive patach: final ḥet/ayin (or mapiq-he) with patach after a hetero vowel → "a" + consonant
+      var furtive = isLast && (c === HET || c === AYIN || (c === HE && dag)) && has(PATAH) && prevHadVowel;
+
+      if (!furtive) {
+        if (cur.qatan) {
+          vowelStr = "o"; thisVowelLong = false; producedVowel = true;   // qamats qatan (כל)
+        } else if (has(PATAH) && has(HIRIQ)) {
+          vowelStr = "ai"; thisVowelLong = false; producedVowel = true;   // defective dual, e.g. יְרוּשָׁלִַם → ...laim
+        } else if (vp === null && !has(SHEVA)) {
+          // no vowel of its own — a following vav/yod may act as a mater
+          if (nx && nx.c === VAV && nHas(DAGESH) && vowelPoint(nx.pts) === null && nx.pts.indexOf(SHEVA) < 0) {
+            vowelStr = "û"; thisVowelLong = true; producedVowel = true; skip[i + 1] = true;       // shureq
+          } else if (nx && nx.c === VAV && (nHas(HOLAM) || nHas(HOLAM_HASER)) && !nHas(DAGESH)) {
+            vowelStr = "ô"; thisVowelLong = true; producedVowel = true; skip[i + 1] = true;       // holam-vav
+          }
+        } else if (vp === HIRIQ && nx && nx.c === YOD && vowelPoint(nx.pts) === null && !nHas(DAGESH) && nx.pts.indexOf(SHEVA) < 0) {
+          vowelStr = "î"; thisVowelLong = true; producedVowel = true; skip[i + 1] = true;          // hiriq-yod
+        } else if (vp === TSERE && nx && nx.c === YOD && vowelPoint(nx.pts) === null && !nHas(DAGESH) && nx.pts.indexOf(SHEVA) < 0) {
+          vowelStr = "ê"; thisVowelLong = true; producedVowel = true; skip[i + 1] = true;          // tsere-yod
+        } else if (vp === SEGOL && nx && nx.c === YOD && vowelPoint(nx.pts) === null && !nHas(DAGESH) && nx.pts.indexOf(SHEVA) < 0) {
+          vowelStr = "ê"; thisVowelLong = true; producedVowel = true; skip[i + 1] = true;          // segol-yod
+        } else if (vp === QAMATS && nx && nx.c === HE && (i + 1 === n - 1) && !nHas(DAGESH) && vowelPoint(nx.pts) === null && nx.pts.indexOf(SHEVA) < 0) {
+          vowelStr = "â"; thisVowelLong = true; producedVowel = true; skip[i + 1] = true;          // final qamats-he (mater)
+        } else if (vp !== null) {
+          // qamats qatan heuristic: qamats immediately before a hataf-qamats
+          if (vp === QAMATS && nx && nx.pts.indexOf(HATAF_QAMATS) >= 0) {
+            vowelStr = "o"; thisVowelLong = false;
+          } else {
+            vowelStr = vowelMap[vp][0];
+            thisVowelLong = vowelMap[vp][1];
+          }
+          producedVowel = true;
+        }
+      }
+
+      // ---- shewa ----------------------------------------------------------
+      var vocalSheva = false;
+      if (has(SHEVA)) {
+        if (isLast)            vocalSheva = false;        // final shewa is silent
+        else if (i === 0)      vocalSheva = true;         // word-initial shewa is vocal
+        else if (dag)          vocalSheva = true;         // under dagesh forte
+        else if (prevSilentShwa) vocalSheva = true;       // 2nd of two shewas
+        else if (prevVowelLong)  vocalSheva = true;       // after a long (open-syllable) vowel
+        else                   vocalSheva = false;        // closes a short syllable
+        if (vocalSheva) { vowelStr = "ə"; producedVowel = true; }
+      }
+
+      // ---- emit -----------------------------------------------------------
+      if (furtive) {
+        out += "a" + consStr;
+      } else {
+        out += consStr + vowelStr;
+      }
+
+      // ---- advance state --------------------------------------------------
+      prevHadVowel   = producedVowel || furtive;
+      prevVowelLong  = thisVowelLong;
+      prevSilentShwa = has(SHEVA) && !vocalSheva;
+    }
+
+    return out;
+  }
+
+  // --- ancient Hebrew scripts -----------------------------------------------
+  // Accept Paleo-Hebrew (encoded in the Phoenician block, U+10900–U+1091F) and
+  // Samaritan (U+0800–U+0815) input by mapping their 22 letters to square-script
+  // consonants before transliterating. Both are consonantal abjads (no niqqud),
+  // so output is consonants only; begadkephat get a dagesh so they render as plain
+  // plosives (b g d k p t) — the standard for consonantal/epigraphic Hebrew.
+  var ANCIENT_MAP = (function () {
+    var heb = ["א","בּ","גּ","דּ","ה","ו","ז","ח","ט","י","כּ","ל","מ","נ","ס","ע","פּ","צ","ק","ר","שׁ","תּ"];
+    var m = {};
+    for (var i = 0; i < 22; i++) {
+      m[String.fromCodePoint(0x10900 + i)] = heb[i]; // Phoenician / Paleo-Hebrew
+      m[String.fromCodePoint(0x0800 + i)]  = heb[i]; // Samaritan
+    }
+    m[String.fromCodePoint(0x1091F)] = " ";          // Phoenician word separator
+    return m;
+  })();
+  function normalizeScript(text) {
+    if (!/[ࠀ-࠿\ud802]/.test(text)) return text; // fast path: no ancient script present
+    var out = "";
+    for (var ch of text) {
+      if (Object.prototype.hasOwnProperty.call(ANCIENT_MAP, ch)) out += ANCIENT_MAP[ch];
+      else if (ch >= "ࠖ" && ch <= "࠭") { /* Samaritan vowels/diacritics: drop */ }
+      else out += ch;
+    }
+    return out;
+  }
+
+  // Walk the whole text, transliterating Hebrew runs and passing through the
+  // rest (Latin, punctuation, digits). Hebrew punctuation is normalised.
+  function transliterateAcademic(text) {
+    text = normalizeScript(text || "");                        // Paleo-Hebrew / Samaritan → square script
+    if (text && text.normalize) text = text.normalize("NFC"); // canonical mark order (for lookup keys)
+    var result = "", token = "";
+    function flush() { if (token) { result += translitWord(token); token = ""; } }
+    for (var i = 0; i < text.length; i++) {
+      var ch = text[i];
+      if (isCons(ch) || isPoint(ch) || isCantillation(ch) || ch === METEG) {
+        token += ch;
+      } else if (ch === "־") {           // maqaf
+        flush(); result += "-";
+      } else if (ch === "׃") {           // sof pasuq
+        flush(); result += ":";
+      } else if (ch === "׀" || ch === "׆") { // paseq / nun hafukha
+        flush(); result += " ";
+      } else if (ch === "׳") {           // geresh
+        flush(); result += "ʹ";
+      } else if (ch === "״") {           // gershayim
+        flush(); result += "ʺ";
+      } else {
+        flush(); result += ch;
+      }
+    }
+    flush();
+    return result;
+  }
+
+  // Simplify the academic output to a popular "general purpose" style.
+  function toGeneral(s) {
+    s = s.replace(/p̄/g, "f");          // fricative pe
+    var map = {
+      "ḇ": "b", "ḡ": "g", "ḏ": "d", "ḵ": "kh", "ṯ": "t",
+      "ḥ": "h", "ṭ": "t", "ṣ": "ts", "š": "sh", "ś": "s",
+      "ʾ": "",  "ʿ": "",
+      "ā": "a", "ē": "e", "ō": "o", "ī": "i", "ū": "u",
+      "î": "i", "û": "u", "ê": "e", "ô": "o", "â": "ah",
+      "ŏ": "o", "ĕ": "e", "ă": "a", "ə": "e"
+    };
+    var r = "";
+    for (var i = 0; i < s.length; i++) {
+      var ch = s[i];
+      r += Object.prototype.hasOwnProperty.call(map, ch) ? map[ch] : ch;
+    }
+    return r;
+  }
+
+  function transliterate(text, scheme) {
+    var academic = transliterateAcademic(text || "");
+    return scheme === "general" ? toGeneral(academic) : academic;
+  }
+
+  return { transliterate: transliterate, toGeneral: toGeneral };
+})();
+
+if (typeof module !== "undefined" && module.exports) module.exports = HebrewTranslit;
+
+</script>
+  <script>
+/* ===========================================================================
+ * Koine Greek transliteration engine
+ * ---------------------------------------------------------------------------
+ * Designed for polytonic Greek as printed in NA28 (Nestle-Aland 28th ed.):
+ * accents, breathings, iota subscripts, diaereses.
+ *
+ * Output follows standard academic / SBL-style Greek transliteration:
+ *   η → ē, ω → ō, θ → th, φ → ph, χ → ch, ψ → ps, ξ → x, ζ → z
+ *   rough breathing (῾) → h ; ῥ → rh ; γ before γ κ ξ χ → n
+ *   diphthongs: αι ει οι υι αυ ευ ηυ ου ; υ → y otherwise
+ * Accents are not represented (transliteration convention). A simplified
+ * scheme (no macrons: η → e, ω → o) is available via simplify().
+ *
+ * The text is normalised to Unicode NFD so that precomposed letters such as
+ * ἐ, ῷ, ἥ decompose into a base letter plus combining marks.
+ * =========================================================================== */
+var GreekTranslit = (function () {
+  "use strict";
+
+  var ROUGH     = "̔", // combining reversed comma above (rough breathing)
+      SMOOTH    = "̓", // combining comma above (smooth breathing)
+      DIAERESIS = "̈",
+      IOTA_SUB  = "ͅ"; // combining ypogegrammeni (iota subscript)
+
+  var base = {
+    "α": "a", "β": "b", "γ": "g", "δ": "d", "ε": "e", "ζ": "z",
+    "η": "ē", "θ": "th", "ι": "i", "κ": "k", "λ": "l", "μ": "m",
+    "ν": "n", "ξ": "x", "ο": "o", "π": "p", "ρ": "r", "σ": "s",
+    "ς": "s", "τ": "t", "υ": "y", "φ": "ph", "χ": "ch", "ψ": "ps",
+    "ω": "ō"
+  };
+
+  var vowels = { "α": 1, "ε": 1, "η": 1, "ι": 1, "ο": 1, "υ": 1, "ω": 1 };
+
+  // valid diphthongs (first vowel + closing ι/υ) → transliteration
+  var diph = {
+    "αι": "ai", "ει": "ei", "οι": "oi", "υι": "ui",
+    "αυ": "au", "ευ": "eu", "ηυ": "ēu", "ωυ": "ōu", "ου": "ou"
+  };
+
+  function isCombining(ch) {
+    var c = ch.charCodeAt(0);
+    return (c >= 0x0300 && c <= 0x036F) ||
+           (c >= 0x1DC0 && c <= 0x1DFF) ||
+           ch === IOTA_SUB;
+  }
+
+  // Capitalise a transliterated token. If `breathingH` is true the leading
+  // "h" is the rough-breathing mark, so we render e.g. ὁ → "Ho", not "HO".
+  function capitalise(str, breathingH) {
+    if (!str) return str;
+    if (breathingH && str.charAt(0) === "h") return "H" + str.slice(1);
+    return str.charAt(0).toUpperCase() + str.slice(1);
+  }
+
+  function transliterate(text) {
+    var nfd = (text || "").normalize("NFD");
+
+    // 1) group each base letter with its trailing combining marks
+    var groups = [];
+    for (var i = 0; i < nfd.length; i++) {
+      var ch = nfd[i];
+      if (isCombining(ch)) {
+        if (groups.length && groups[groups.length - 1].greek) {
+          groups[groups.length - 1].marks.push(ch);
+        } else {
+          groups.push({ greek: false, raw: ch });
+        }
+        continue;
+      }
+      var lower = ch.toLowerCase();
+      if (Object.prototype.hasOwnProperty.call(base, lower)) {
+        groups.push({ greek: true, base: lower, upper: ch !== lower, marks: [] });
+      } else {
+        groups.push({ greek: false, raw: ch });
+      }
+    }
+
+    // 2) walk groups, merging diphthongs and applying contextual rules
+    var out = "";
+    for (var g = 0; g < groups.length; g++) {
+      var G = groups[g];
+      if (!G.greek) { out += G.raw; continue; }
+      var N = groups[g + 1];
+      var marksHas = function (grp, m) { return grp && grp.marks && grp.marks.indexOf(m) >= 0; };
+
+      // --- diphthong? (second vowel must not carry a diaeresis) ----------
+      var pair = N && N.greek ? G.base + N.base : null;
+      if (pair && Object.prototype.hasOwnProperty.call(diph, pair) && !marksHas(N, DIAERESIS)) {
+        var rough = marksHas(N, ROUGH) || marksHas(G, ROUGH);
+        var str = diph[pair];
+        if (rough) str = "h" + str;
+        if (G.upper) str = capitalise(str, rough);
+        out += str;
+        g++;               // consume the second vowel
+        continue;
+      }
+
+      // --- single letter -------------------------------------------------
+      var s = base[G.base];
+      var breathingH = false;
+
+      if (G.base === "γ" && N && N.greek &&
+          (N.base === "γ" || N.base === "κ" || N.base === "ξ" || N.base === "χ")) {
+        s = "n";                                   // nasal gamma
+      } else if (G.base === "ρ" && marksHas(G, ROUGH)) {
+        s = "rh";                                  // initial/aspirated rho
+      } else if (vowels[G.base] && marksHas(G, ROUGH)) {
+        s = "h" + s; breathingH = true;            // rough breathing on a vowel
+      }
+
+      if (G.upper) s = capitalise(s, breathingH);
+      out += s;
+    }
+
+    return out;
+  }
+
+  // Simplified scheme: drop macrons (η → e, ω → o).
+  function simplify(s) {
+    return s.replace(/ē/g, "e").replace(/ō/g, "o").replace(/Ē/g, "E").replace(/Ō/g, "O");
+  }
+
+  function run(text, scheme) {
+    var academic = transliterate(text || "");
+    return scheme === "simple" ? simplify(academic) : academic;
+  }
+
+  return { transliterate: run, simplify: simplify };
+})();
+
+if (typeof module !== "undefined" && module.exports) module.exports = GreekTranslit;
+
+</script>
+  <script>
+/* UI wiring: live transliteration, tab switching, examples, copy. */
+(function () {
+  "use strict";
+
+  var EXAMPLES = {
+    hebrew: "בְּרֵאשִׁית בָּרָא אֱלֹהִים אֵת הַשָּׁמַיִם וְאֵת הָאָרֶץ׃",
+    greek:  "Ἐν ἀρχῇ ἦν ὁ λόγος, καὶ ὁ λόγος ἦν πρὸς τὸν θεόν, καὶ θεὸς ἦν ὁ λόγος."
+  };
+
+  function $(id) { return document.getElementById(id); }
+
+  // ---- tabs ----------------------------------------------------------------
+  var tabBtns = document.querySelectorAll("#tabs button");
+  tabBtns.forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var tab = btn.getAttribute("data-tab");
+      tabBtns.forEach(function (b) { b.classList.toggle("active", b === btn); });
+      document.querySelectorAll(".panel").forEach(function (p) {
+        p.classList.toggle("active", p.id === tab);
+      });
+    });
+  });
+
+  // ---- toast ---------------------------------------------------------------
+  var toast = $("toast");
+  var toastTimer;
+  function showToast(msg) {
+    toast.textContent = msg;
+    toast.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { toast.classList.remove("show"); }, 1400);
+  }
+
+  // ---- generic panel binder ------------------------------------------------
+  function bind(prefix, engine) {
+    var input  = $(prefix + "-input");
+    var output = $(prefix + "-output");
+    var scheme = $(prefix + "-scheme");
+    var count  = $(prefix + "-count");
+
+    function render() {
+      var text = input.value;
+      output.textContent = text ? engine.transliterate(text, scheme.value) : "";
+      var n = text.length;
+      count.textContent = n + (n === 1 ? " char" : " chars");
+    }
+
+    input.addEventListener("input", render);
+    scheme.addEventListener("change", render);
+
+    $(prefix + "-example").addEventListener("click", function () {
+      input.value = EXAMPLES[prefix === "heb" ? "hebrew" : "greek"];
+      render();
+      input.focus();
+    });
+    $(prefix + "-clear").addEventListener("click", function () {
+      input.value = "";
+      render();
+      input.focus();
+    });
+    $(prefix + "-copy").addEventListener("click", function () {
+      var txt = output.textContent;
+      if (!txt) { showToast("Nothing to copy"); return; }
+      function done() { showToast("Copied"); }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(txt).then(done, fallback);
+      } else { fallback(); }
+      function fallback() {
+        var ta = document.createElement("textarea");
+        ta.value = txt; document.body.appendChild(ta); ta.select();
+        try { document.execCommand("copy"); done(); } catch (e) { showToast("Copy failed"); }
+        document.body.removeChild(ta);
+      }
+    });
+
+    return render;
+  }
+
+  bind("heb", HebrewTranslit);
+  bind("grk", GreekTranslit);
+})();
+
+</script>
+</body>
+</html>

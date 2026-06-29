@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Biblical Transliterator — Hebrew (BHS) &amp; Koine Greek (NA28)</title>
+<meta name="description" content="Automatic transliteration of pointed Biblical Hebrew (BHS) and polytonic Koine Greek (NA28). Paste a verse, get a scholarly transliteration.">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h1>Biblical Transliterator</h1>
+    <p>Paste pointed <strong>Biblical Hebrew</strong> (BHS / Leningrad) or polytonic
+       <strong>Koine Greek</strong> (NA28) and get a scholarly transliteration instantly —
+       handling begadkephat, dagesh, shewa, matres lectionis, breathings, and diphthongs.</p>
+  </header>
+
+  <nav class="tabs" id="tabs">
+    <button data-tab="hebrew" class="active">עברית · Biblical Hebrew</button>
+    <button data-tab="greek">Ἑλληνικά · Koine Greek</button>
+  </nav>
+
+  <main>
+    <!-- ================= HEBREW ================= -->
+    <section id="hebrew" class="panel active">
+      <div class="controls">
+        <label>Style
+          <select id="heb-scheme">
+            <option value="academic">SBL Academic (ḇ ḡ ḏ · ā ē ō · ʾ ʿ)</option>
+            <option value="general">SBL General (v · sh · ts · no marks)</option>
+          </select>
+        </label>
+        <div class="spacer"></div>
+        <button class="btn" id="heb-example">Load example (Gen 1:1)</button>
+        <button class="btn" id="heb-clear">Clear</button>
+        <button class="btn" id="heb-copy">Copy result</button>
+      </div>
+      <div class="io">
+        <div class="field">
+          <div class="caption"><span>Hebrew</span><span class="count" id="heb-count">0 chars</span></div>
+          <textarea id="heb-input" dir="rtl" lang="he" spellcheck="false"
+            placeholder="בְּרֵאשִׁית בָּרָא אֱלֹהִים…  — paste pointed Biblical Hebrew (BHS)"></textarea>
+        </div>
+        <div class="field">
+          <div class="caption"><span>Transliteration</span></div>
+          <div class="output" id="heb-output" data-placeholder="Transliteration appears here as you type…"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= GREEK ================= -->
+    <section id="greek" class="panel">
+      <div class="controls">
+        <label>Style
+          <select id="grk-scheme">
+            <option value="academic">Academic (ē ō · th ph ch · h-breathing)</option>
+            <option value="simple">Simplified (e o · no macrons)</option>
+          </select>
+        </label>
+        <div class="spacer"></div>
+        <button class="btn" id="grk-example">Load example (John 1:1)</button>
+        <button class="btn" id="grk-clear">Clear</button>
+        <button class="btn" id="grk-copy">Copy result</button>
+      </div>
+      <div class="io">
+        <div class="field">
+          <div class="caption"><span>Greek</span><span class="count" id="grk-count">0 chars</span></div>
+          <textarea id="grk-input" lang="grc" spellcheck="false"
+            placeholder="Ἐν ἀρχῇ ἦν ὁ λόγος…  — paste Koine Greek (NA28)"></textarea>
+        </div>
+        <div class="field">
+          <div class="caption"><span>Transliteration</span></div>
+          <div class="output" id="grk-output" data-placeholder="Transliteration appears here as you type…"></div>
+        </div>
+      </div>
+    </section>
+
+    <div class="notes">
+      <h3>How the transliteration works &amp; what to expect</h3>
+      <ul>
+        <li><strong>Hebrew (BHS-compatible):</strong> begadkephat letters render plosive with
+            dagesh (<code>b g d k p t</code>) and fricative without (<code>ḇ ḡ ḏ ḵ p̄ ṯ</code>);
+            <code>שׁ</code>=<code>š</code>, <code>שׂ</code>=<code>ś</code>; matres lectionis are
+            read as vowels (<code>וֹ</code>=<code>ô</code>, <code>וּ</code>=<code>û</code>,
+            <code>ִי</code>=<code>î</code>, final <code>ָה</code>=<code>â</code>); cantillation
+            marks are stripped. Furtive patach (e.g. <code>רוּחַ</code> → <code>rûaḥ</code>) is handled.
+            <strong>Ancient scripts accepted too:</strong> Paleo-Hebrew (Phoenician block) and
+            Samaritan input are mapped to square-script letters — being consonantal, they yield a
+            consonants-only transliteration (e.g. <code>𐤃𐤁𐤓</code> → <code>dbr</code>).</li>
+        <li><strong>Greek (NA28-compatible):</strong> <code>η</code>=<code>ē</code>,
+            <code>ω</code>=<code>ō</code>, <code>θ φ χ ψ ξ</code>=<code>th ph ch ps x</code>;
+            rough breathing → <code>h</code> (<code>ῥ</code>=<code>rh</code>); <code>γ</code>
+            before <code>γ κ ξ χ</code> → <code>n</code>; diphthongs <code>αι ει οι αυ ευ ου …</code>
+            handled; accents are not shown (standard convention).</li>
+        <li><strong>Qamats gadol (<code>ā</code>) vs. qamats qatan (<code>o</code>):</strong> resolved
+            authoritatively for every word of the Hebrew Bible using the OpenScriptures Hebrew Bible
+            (WLC) morphology — segolate nouns (<code>חָכְמָה</code>→<code>ḥoḵmâ</code>), the quantifier
+            <code>כָּל־</code>→<code>kol-</code>, and hollow-verb forms (<code>וַיָּמָת</code>→<code>wayyāmoṯ</code>)
+            are all correct, while genuinely long qamats (<code>יָד</code>→<code>yāḏ</code>,
+            <code>לְבָבְךָ</code>→<code>ləḇāḇḵā</code>) stays gadol.</li>
+        <li><strong>The one true limit — homographs:</strong> a few words are spelled identically but
+            read two ways depending on sentence context (<code>שָׁמְרָה</code> = <em>šāmərâ</em> “she kept”
+            vs. <em>šomrâ</em> “keep!”). With no sentence to parse, the tool gives the commoner reading;
+            these are theoretically unresolvable by any context-free transliterator.</li>
+      </ul>
+    </div>
+  </main>
+
+  <footer>
+    Built for study of the Hebrew Bible (BHS) and Greek New Testament (NA28).
+    Runs entirely in your browser — nothing is uploaded.
+  </footer>
+
+  <div class="toast" id="toast">Copied</div>
+
+  <script src="heb-qatan.js?v=8"></script>
+  <script src="hebrew.js?v=8"></script>
+  <script src="greek.js?v=8"></script>
+  <script src="app.js?v=8"></script>
+</body>
+</html>
